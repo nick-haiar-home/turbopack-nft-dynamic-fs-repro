@@ -1,8 +1,7 @@
 # turbopack-nft-dynamic-fs-repro
 
 Minimal reproduction for a Turbopack file-tracing warning. Pinned to
-`next@canary` (required by Next's bug-report form). See `ISSUE.md` for the
-paste-ready write-up.
+`next@canary` (required by Next's bug-report form).
 
 ## Run
 
@@ -30,5 +29,11 @@ The warning recommends `path.join(/*turbopackIgnore: true*/ process.cwd(), bar)`
 annotates a bare variable passed straight to the `fs` call
 (`readdirSync(/*turbopackIgnore: true*/ folder)` is silenced), not the
 `path.join(...)` form the message shows, and not a `path.join` nested in the
-call (`readFileSync(path.join(folder, f))` can't be silenced at all). See the
-table in `ISSUE.md`.
+call (`readFileSync(path.join(folder, f))` can't be silenced at all).
+
+| Annotation | Result |
+|---|---|
+| `path.join(/* turbopackIgnore: true */ process.cwd(), "data")` | warning unchanged |
+| `readFileSync(/* turbopackIgnore: true */ path.join(folder, f), …)` | still warns |
+| `readFileSync(path.join(/* turbopackIgnore: true */ folder, f), …)` | still warns |
+| `readdirSync(/* turbopackIgnore: true */ folder)` (bare variable arg) | silenced ✅ |
