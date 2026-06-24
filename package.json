@@ -1,0 +1,13 @@
+{
+  "name": "turbopack-nft-dynamic-fs-repro",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build": "next build"
+  },
+  "dependencies": {
+    "next": "canary",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
