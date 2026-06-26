@@ -14,26 +14,31 @@ Observe (on `next@16.3.0-canary.65`):
 
 ```
 Turbopack build encountered 3 warnings:
-./lib/loader.js:6:10
+./lib/loader.js
 Warning: Dynamic filesystem access causes tracing of the whole project
 ```
 
-## The bug
+## What it shows
 
 `lib/loader.js` does a runtime-resolved `fs` read (stand-in for a DB migrator
-reading its migrations folder). For `output: "standalone"`, Turbopack traces
-the whole project and warns.
+reading its migrations folder). For `output: "standalone"`, Turbopack can't
+bound the read and traces the whole project, so it warns.
 
-The warning recommends `path.join(/*turbopackIgnore: true*/ process.cwd(), bar)`
-— but that placement has **no effect**. `turbopackIgnore` only works when it
-annotates a bare variable passed straight to the `fs` call
-(`readdirSync(/*turbopackIgnore: true*/ folder)` is silenced), not the
-`path.join(...)` form the message shows, and not a `path.join` nested in the
-call (`readFileSync(path.join(folder, f))` can't be silenced at all).
+Tracked in [vercel/next.js#95125](https://github.com/vercel/next.js/issues/95125).
+
+## Status (`next@16.3.0-canary.65`, incl. #94361)
+
+`turbopackIgnore` now silences a bare-variable `fs` argument. The remaining gap
+is the `readFileSync(path.join(folder, f))` shape — the form `drizzle`'s
+`migrate()` uses — where no comment placement clears the warning:
 
 | Annotation | Result |
 |---|---|
-| `path.join(/* turbopackIgnore: true */ process.cwd(), "data")` | warning unchanged |
+| `readdirSync(/* turbopackIgnore: true */ folder)` (bare variable) | silenced ✅ |
 | `readFileSync(/* turbopackIgnore: true */ path.join(folder, f), …)` | still warns |
 | `readFileSync(path.join(/* turbopackIgnore: true */ folder, f), …)` | still warns |
-| `readdirSync(/* turbopackIgnore: true */ folder)` (bare variable arg) | silenced ✅ |
+| hoist both args into annotated variables | one residual warning |
+
+Per maintainer feedback on the issue, the `path.join(/*turbopackIgnore: true*/ …)`
+shown in the warning is illustrating the comment *syntax*, not a directive to
+annotate `path.join`; the message wording is being improved.
